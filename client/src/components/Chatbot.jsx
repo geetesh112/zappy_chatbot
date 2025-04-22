@@ -3,7 +3,6 @@ import ChatbotIcon from "./ChatbotIcon";
 import ChatForm from "./ChatForm";
 import ChatMessage from "./ChatMessage";
 import ChatSettings from "./ChatSettings";
-import { companyInfo } from "./CompanyInfo";
 import closeImg from "../assets/Close.png";
 import chatImg from "../assets/Chat.png";
 import deleteImg from "../assets/Delete.png";
