@@ -11,15 +11,10 @@ const API_KEY = import.meta.env.VITE_API_KEY;
 
 const Chatbot = ({ setShowChatbot }) => {
     const chatBodyRef = useRef();
+
     const [chatHistory, setChatHistory] = useState(() => {
         const savedChatHistory = localStorage.getItem('chatHistory');
-        return savedChatHistory ? JSON.parse(savedChatHistory) : [
-            {
-                hideInChat: true,
-                role: "model",
-                text: "",
-            },
-        ];
+        return savedChatHistory ? JSON.parse(savedChatHistory) : [];
     });
 
     const [settings, setSettings] = useState(() => {
@@ -56,26 +51,32 @@ const Chatbot = ({ setShowChatbot }) => {
 
         const updateHistory = (text, isError = false) => {
             setChatHistory((prev) => {
-                const updatedHistory = [...prev.filter((msg) => msg.text !== "Thinking..."), { role: "model", text, isError }];
+                const updatedHistory = [...prev.filter(msg => msg.text !== "Thinking..."), { role: "model", text, isError }];
                 localStorage.setItem('chatHistory', JSON.stringify(updatedHistory));
                 return updatedHistory;
             });
         };
 
-        history = history.map(({ role, text }) => ({ role, parts: [{ text }] }));
+        const validHistory = history
+            .filter(({ text }) => text?.trim() !== "")
+            .map(({ role, text }) => ({
+                role,
+                parts: [{ text }],
+            }));
 
         const requestOptions = {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: history }),
+            body: JSON.stringify({ contents: validHistory }),
         };
 
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, requestOptions);
             const data = await response.json();
-            if (!response.ok) throw new Error(data?.error.message || "Something went wrong!");
 
-            const apiResponseText = data.candidates[0].content.parts[0].text.replace(/\\(.?)\\*/g, "$1").trim();
+            if (!response.ok) throw new Error(data?.error?.message || "Something went wrong!");
+
+            const apiResponseText = data.candidates[0].content.parts[0].text.trim();
             updateHistory(apiResponseText);
         } catch (error) {
             updateHistory(error.message, true);
@@ -94,7 +95,10 @@ const Chatbot = ({ setShowChatbot }) => {
     };
 
     useEffect(() => {
-        chatBodyRef.current.scrollTo({ top: chatBodyRef.current.scrollHeight, behavior: "smooth" });
+        chatBodyRef.current?.scrollTo({
+            top: chatBodyRef.current.scrollHeight,
+            behavior: "smooth",
+        });
     }, [chatHistory]);
 
     return (
